@@ -1,0 +1,182 @@
+/* style.css - Thème Navy Blue pour Pico */
+
+/* 1. Configuration générale */
+body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0f2f5; /* Gris très clair bleuté pour le fond */
+    color: #333;
+    margin: 0;
+    padding: 2em;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+}
+
+/* 2. Le Titre (Logo) */
+h1 {
+    color: #001f3f; /* Navy profond */
+    font-size: 2.5em;
+    margin-bottom: 20px;
+    letter-spacing: -1px;
+    text-align: center;
+    width: 100%;
+    max-width: 1100px;
+}
+
+/* 3. La barre de recherche */
+form {
+    background-color: #ffffff;
+    padding: 20px;
+    border-radius: 8px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    margin-bottom: 30px;
+    display: flex;
+    gap: 10px;
+    max-width: 800px;
+    width: 100%;
+}
+
+input[type="text"] {
+    flex-grow: 1; /* Prend toute la place disponible */
+    padding: 12px;
+    border: 2px solid #dde1e7;
+    border-radius: 4px;
+    font-size: 16px;
+    outline: none;
+    transition: border-color 0.3s;
+}
+
+input[type="text"]:focus {
+    border-color: #001f3f; /* Devient Navy quand on clique dedans */
+}
+
+/* 4. Le bouton Chercher */
+button {
+    background-color: #001f3f; /* Navy */
+    color: white;
+    border: none;
+    padding: 12px 25px;
+    border-radius: 4px;
+    font-size: 16px;
+    font-weight: bold;
+    cursor: pointer;
+    transition: background-color 0.2s;
+}
+
+button:hover {
+    background-color: #003366; /* Navy un peu plus clair au survol */
+}
+
+/* 5. Les Résultats (Design "Carte") */
+.result {
+    background-color: white;
+    padding: 15px 20px;
+    margin-bottom: 15px;
+    border-radius: 6px;
+    border-left: 5px solid #001f3f; /* Petite barre Navy sur le côté */
+    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    max-width: 800px;
+    width: 100%;
+    transition: transform 0.2s;
+}
+
+.result:hover {
+    transform: translateX(5px); /* Petit effet de mouvement au survol */
+    box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+}
+
+/* Titre du lien */
+.result a {
+    font-size: 1.2em;
+    font-weight: bold;
+    color: #003366; /* Bleu marine moyen */
+    text-decoration: none;
+}
+
+.result a:hover {
+    text-decoration: underline;
+    color: #001f3f;
+}
+
+/* URL verte (standard) ou Cyan foncé */
+.url {
+    font-size: 0.9em;
+    color: #2E8B57; /* SeaGreen, lisible et pro */
+    margin-bottom: 5px;
+}
+
+
+/* --- Section Bitcoin --- */
+.btc-donation {
+    margin-top: 50px;
+    padding: 20px;
+    background: #fdfaf2;
+    border: 1px dashed #f39c12;
+    border-radius: 8px;
+    max-width: 500px;
+    width: 100%;
+    text-align: center;
+}
+.btc-address {
+    background: #eee;
+    padding: 8px;
+    font-family: monospace;
+    border-radius: 4px;
+    display: block;
+    margin: 10px 0;
+    word-break: break-all;
+}
+.copy-btn {
+    background: #f39c12;
+    font-size: 0.8em;
+    padding: 5px 10px;
+}
+
+/* Description */
+.snippet {
+    color: #555;
+ 
+
+/* Pagination */
+.pagination {
+    max-width: 1100px;
+    width: 100%;
+    justify-content: center;
+}
+
+.page-link {
+    background: #fff;
+    padding: 8px 14px;
+    border-radius: 4px;
+    text-decoration: none;
+    color: #001f3f;
+    border: 1px solid #dde1e7;
+    transition: all 0.2s;
+}
+
+.page-link:hover {
+    background: #001f3f;
+    color: #fff;
+    border-color: #001f3f;
+}
+
+/* Count / Info résultats */
+.count {
+    max-width: 1100px;
+    width: 100%;
+    text-align: center;
+}
+
+/* Images link */
+.images-link {
+    max-width: 800px;
+    width: 100%;
+    text-align: center;
+}
+
+/* Grid d'images */
+.img-grid {
+    max-width: 1100px;
+    width: 100%;
+}   line-height: 1.5;
+}

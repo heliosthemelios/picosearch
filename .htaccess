@@ -1,0 +1,19 @@
+# Bloquer l'accès au fichier .env et tous les fichiers cachés
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
+
+# Protection supplémentaire pour .env
+<Files ".env">
+    Require all denied
+</Files>
+
+# Bloquer l'accès aux fichiers Python
+<FilesMatch "\.(py|pyc|pyo)$">
+    Require all denied
+</FilesMatch>
+
+# Bloquer les fichiers de configuration sensibles
+<FilesMatch "(composer\.json|composer\.lock|package\.json|package-lock\.json|\.git.*|\.htaccess)$">
+    Require all denied
+</FilesMatch>
