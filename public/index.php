@@ -1,11 +1,10 @@
 <?php
-require_once __DIR__ . '/../includes/env_loader.php';
+require_once __DIR__ . '/env_loader.php';
 loadEnv();
-
-$host = env('DB_HOST', 'localhost');
-$dbname = env('DB_NAME', 'pico');
-$user = env('DB_USER', 'root');
-$pass = env('DB_PASSWORD');
+    $host = env('DB_HOST', 'localhost');
+    $dbname = env('DB_NAME', 'pico');
+    $user = env('DB_USER', 'root');
+    $pass = env('DB_PASSWORD');
 
 try {
     $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $pass);
@@ -59,7 +58,7 @@ try {
                 $where = implode(" AND ", $conditions);
 
                 // Pagination
-                $perPage = 50;
+                $perPage = 30;
                 $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
                 if ($page < 1) { $page = 1; }
 
