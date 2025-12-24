@@ -24,7 +24,7 @@ try {
 <head>
     <meta charset="UTF-8">
     <title>Recherche d'images - PicoSearch</title>
-    <link rel="stylesheet" href="styles.css">
+    <link rel="stylesheet" href="style.css">
     <style>
     .img-grid { display: grid; grid-template-columns: repeat(auto-fill,minmax(180px,1fr)); gap:12px; max-width:1100px; }
     .thumb img { width:100%; height:140px; object-fit:cover; border-radius:6px; display:block; }

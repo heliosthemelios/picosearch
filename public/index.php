@@ -19,23 +19,25 @@ try {
 <head>
     <meta charset="UTF-8">
     <title>Moteur PicoSearch</title>
-    <link rel="stylesheet" href="styles.css">
-    <style>
-    /* Lien esthétique vers la recherche d'images placé au-dessus de la barre */
-    .images-link { display:inline-block; margin-bottom:12px; background:#001f3f; color:#fff; padding:8px 14px; border-radius:6px; text-decoration:none; font-weight:600; box-shadow:0 2px 6px rgba(0,0,0,0.08); }
-    .images-link:hover { background:#003366; }
-    </style>
+    <link rel="stylesheet" href="style.css">
 </head>
 <body>
-    <h1>PicoSearch</h1>
-    <!-- Bouton/ lien vers la page d'images (au-dessus du formulaire de recherche) -->
-    <div>
-       <!--  <a class="images-link" href="images.php" title="Recherche d'images">Recherche d'images</a> -->
+    <div class="header-actions">
+        <a href="https://paypal.me/picosearch" class="donate-paypal">Soutenir le projet</a>
     </div>
-    <form method="get">
-        <input type="text" name="q" placeholder="Chercher de l'art..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
-        <button type="submit">Chercher</button>
-    </form>
+    <h1>PicoSearch</h1>
+    <!-- Conteneur pour la barre de recherche et le bouton images -->
+        <div class="top-bar">
+        <a class="images-link" href="#" title="Recherche d'Actualités">actualités</a>
+        <a class="images-link" href="#" title="Recherche d'images">images</a>
+        <a class="images-link" href="#" title="Recherche de vidéos">vidéos</a>
+        </div>
+        <div class="search-container">
+            <form method="get">
+                <input type="text" name="q" placeholder="Chercher de l'art..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
+                <button type="submit">Chercher</button>
+            </form>
+        </div>
 
     <?php
         if (!empty($_GET['q'])) {
@@ -127,25 +129,5 @@ try {
             }
         }
     ?>
-
-    <div class="btc-donation">
-        <strong>Soutenez PicoSearch 🎨</strong>
-        <p>Aidez-nous à indexer plus d'art avec un don en Bitcoin :</p>
-        
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=150x150&data=bc1qyl7htz3lqtwt0ptam9470w5qyeysqpamewgknk" alt="QR Code Bitcoin">
-        
-        <span class="btc-address" id="btcAddr">bc1qyl7htz3lqtwt0ptam9470w5qyeysqpamewgknk</span>
-        <button class="copy-btn" onclick="copyAddress()">Copier l'adresse</button>
-    </div>
-
-    <script>
-    function copyAddress() {
-        var addr = document.getElementById("btcAddr").innerText;
-        navigator.clipboard.writeText(addr).then(function() {
-            alert("Adresse copiée ! Merci pour votre soutien.");
-        });
-    }
-    </script>
-
 </body>
 </html>
