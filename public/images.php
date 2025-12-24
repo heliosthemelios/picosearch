@@ -1,5 +1,5 @@
 <?php
-require_once __DIR__ . '/../includes/env_loader.php';
+require_once __DIR__ . '/env_loader.php';
 loadEnv();
 
 // Configuration de la connexion à la base de données
@@ -36,7 +36,7 @@ try {
     </style>
 </head>
 <body>
-    <h1>Recherche d'images</h1>
+    <h1>Recherche d'images - PicoSearch</h1>
 
     <!-- Formulaire simple de recherche (GET) -->
     <form method="get">

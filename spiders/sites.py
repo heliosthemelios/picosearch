@@ -8,6 +8,7 @@ import random  # Pour ajouter de la variabilité aux délais
 import argparse  # Pour gérer les arguments en ligne de commande
 from dotenv import load_dotenv  # Pour charger les variables d'environnement
 import os  # Pour accéder aux variables d'environnement
+from langdetect import detect, LangDetectException  # Pour détecter la langue du contenu
 
 # Charger les variables d'environnement depuis le fichier .env
 # Cherche dans plusieurs emplacements possibles
@@ -73,6 +74,23 @@ def whitelisted(netloc, whitelist):
 def looks_like_art_url(url):
     # Cherche des mots clés d'art dans le chemin de l'URL
     return any(k in urlparse(url).path.lower() for k in ART_KEYWORDS)
+
+# Vérifie si le contenu de la page est en français ou anglais
+def is_french_or_english(html):
+    try:
+        # Parse le HTML et extrait le texte
+        soup = BeautifulSoup(html, "html.parser")
+        text = soup.get_text(" ", strip=True)
+        # Ne vérifie que si on a assez de texte (au moins 50 caractères)
+        if len(text) < 50:
+            return False
+        # Détecte la langue
+        lang = detect(text)
+        # Accepte seulement français (fr) et anglais (en)
+        return lang in ['fr', 'en']
+    except (LangDetectException, Exception):
+        # En cas d'erreur de détection, on rejette la page
+        return False
 
 # Détermine si une page HTML contient du contenu lié à l'art basé sur la densité de mots clés
 def is_art_page(html):
@@ -159,7 +177,9 @@ def crawl(start_urls, whitelist):
             if r.status_code != 200: continue
 
             html = r.text
-            # Filtre : n'accepte que les pages contenant du contenu d'art
+            # Filtre 1 : vérifie la langue (français ou anglais uniquement)
+            if not is_french_or_english(html): continue
+            # Filtre 2 : n'accepte que les pages contenant du contenu d'art
             if not is_art_page(html): continue
 
             # Incrémente le compteur pour ce domaine

@@ -3,6 +3,7 @@
 .env.local
 .env.*.local
 spider/.env
+public/html/.env
 
 # Identifiants et secrets
 config.ini

@@ -28,9 +28,9 @@ try {
     <h1>PicoSearch</h1>
     <!-- Conteneur pour la barre de recherche et le bouton images -->
         <div class="top-bar">
-        <a class="images-link" href="#" title="Recherche d'Actualités">actualités</a>
-        <a class="images-link" href="#" title="Recherche d'images">images</a>
-        <a class="images-link" href="#" title="Recherche de vidéos">vidéos</a>
+        <a class="link" href="index.php" title="Recherche de site">Sites</a>
+        <a class="link" href="images.php" title="Recherche d'images">images</a>
+        <a class="link" href="#" title="Recherche de vidéos">vidéos</a>
         </div>
         <div class="search-container">
             <form method="get">
