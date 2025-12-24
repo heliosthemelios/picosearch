@@ -55,13 +55,14 @@ def init_db_mysql():
         charset="utf8mb4", cursorclass=pymysql.cursors.Cursor, autocommit=True
     )
     cursor = conn.cursor()
-    # Crée la table 'links' pour stocker les URLs, titres et extraits trouvés
+    # Crée la table 'links' pour stocker les URLs, titres, extraits et langue trouvés
     cursor.execute("""
         CREATE TABLE IF NOT EXISTS links (
             id INT AUTO_INCREMENT PRIMARY KEY,
             url TEXT UNIQUE,
             title TEXT,
-            snippet TEXT
+            snippet TEXT,
+            langue VARCHAR(10)
         )""")
     return conn, cursor
 
@@ -75,22 +76,27 @@ def looks_like_art_url(url):
     # Cherche des mots clés d'art dans le chemin de l'URL
     return any(k in urlparse(url).path.lower() for k in ART_KEYWORDS)
 
-# Vérifie si le contenu de la page est en français ou anglais
-def is_french_or_english(html):
+# Détecte la langue du contenu HTML et la retourne
+def detect_language(html):
     try:
         # Parse le HTML et extrait le texte
         soup = BeautifulSoup(html, "html.parser")
         text = soup.get_text(" ", strip=True)
         # Ne vérifie que si on a assez de texte (au moins 50 caractères)
         if len(text) < 50:
-            return False
+            return None
         # Détecte la langue
         lang = detect(text)
-        # Accepte seulement français (fr) et anglais (en)
-        return lang in ['fr', 'en']
+        return lang
     except (LangDetectException, Exception):
-        # En cas d'erreur de détection, on rejette la page
-        return False
+        # En cas d'erreur de détection, retourne None
+        return None
+
+# Vérifie si le contenu de la page est en français ou anglais
+def is_french_or_english(html):
+    lang = detect_language(html)
+    # Accepte seulement français (fr) et anglais (en)
+    return lang in ['fr', 'en'] if lang else False
 
 # Détermine si une page HTML contient du contenu lié à l'art basé sur la densité de mots clés
 def is_art_page(html):
@@ -190,11 +196,13 @@ def crawl(start_urls, whitelist):
             title = soup.title.string.strip() if soup.title else "Sans titre"
             # Extrait un snippet pertinent
             snippet = extract_snippet(html)
+            # Détecte la langue de la page
+            langue = detect_language(html)
 
-            # Insère l'URL, le titre et l'extrait dans la base de données (IGNORE les doublons)
+            # Insère l'URL, le titre, l'extrait et la langue dans la base de données (IGNORE les doublons)
             cur.execute(
-                "INSERT IGNORE INTO links (url, title, snippet) VALUES (%s, %s, %s)",
-                (url, title, snippet)
+                "INSERT IGNORE INTO links (url, title, snippet, langue) VALUES (%s, %s, %s, %s)",
+                (url, title, snippet, langue)
             )
 
             # Traite tous les liens trouvés dans la page

@@ -88,6 +88,27 @@ input[type="text"]:focus {
     border-color: #001f3f; /* Devient Navy quand on clique dedans */
 }
 
+/* Sélecteur de langue */
+.lang-select {
+    padding: 12px;
+    border: 2px solid #dde1e7;
+    border-radius: 4px;
+    font-size: 16px;
+    background-color: white;
+    outline: none;
+    cursor: pointer;
+    transition: border-color 0.3s;
+    min-width: 150px;
+}
+
+.lang-select:focus {
+    border-color: #001f3f;
+}
+
+.lang-select:hover {
+    border-color: #8ebde7;
+}
+
 /* 4. Le bouton Chercher */
 button {
     background-color: #8ebde7; /* Navy */

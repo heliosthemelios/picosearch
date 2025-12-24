@@ -35,6 +35,11 @@ try {
         <div class="search-container">
             <form method="get">
                 <input type="text" name="q" placeholder="Chercher de l'art..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">
+                <select name="lang" class="lang-select">
+                    <option value="" <?= empty($_GET['lang']) ? 'selected' : '' ?>>Toutes les langues</option>
+                    <option value="fr" <?= ($_GET['lang'] ?? '') === 'fr' ? 'selected' : '' ?>>Français</option>
+                    <option value="en" <?= ($_GET['lang'] ?? '') === 'en' ? 'selected' : '' ?>>English</option>
+                </select>
                 <button type="submit">Chercher</button>
             </form>
         </div>
@@ -54,6 +59,12 @@ try {
                     $conditions[] = "(title LIKE $key OR snippet LIKE $key OR url LIKE $key)";
                     $params[$key] = "%" . $term . "%";
                 }
+            }
+
+            // Ajout du filtre de langue si spécifié
+            if (!empty($_GET['lang'])) {
+                $conditions[] = "langue = :langue";
+                $params[':langue'] = $_GET['lang'];
             }
 
             if (!empty($conditions)) {
@@ -100,11 +111,12 @@ try {
                     // Pagination UI (afficher seulement si plus de 50 résultats)
                     if ($total > $perPage) {
                         $q = isset($_GET['q']) ? urlencode($_GET['q']) : '';
+                        $lang = !empty($_GET['lang']) ? '&lang=' . urlencode($_GET['lang']) : '';
                         echo '<div class="pagination" style="margin-top:18px; display:flex; gap:8px; align-items:center;">';
                         // First & Prev
                         if ($page > 1) {
-                            echo '<a href="?q=' . $q . '&page=1" class="page-link">« Première</a>';
-                            echo '<a href="?q=' . $q . '&page=' . ($page - 1) . '" class="page-link">‹ Précédente</a>';
+                            echo '<a href="?q=' . $q . $lang . '&page=1" class="page-link">« Première</a>';
+                            echo '<a href="?q=' . $q . $lang . '&page=' . ($page - 1) . '" class="page-link">‹ Précédente</a>';
                         } else {
                             echo '<span class="page-link" style="opacity:.5">« Première</span>';
                             echo '<span class="page-link" style="opacity:.5">‹ Précédente</span>';
@@ -115,8 +127,8 @@ try {
 
                         // Next & Last
                         if ($page < $maxPage) {
-                            echo '<a href="?q=' . $q . '&page=' . ($page + 1) . '" class="page-link">Suivante ›</a>';
-                            echo '<a href="?q=' . $q . '&page=' . $maxPage . '" class="page-link">Dernière »</a>';
+                            echo '<a href="?q=' . $q . $lang . '&page=' . ($page + 1) . '" class="page-link">Suivante ›</a>';
+                            echo '<a href="?q=' . $q . $lang . '&page=' . $maxPage . '" class="page-link">Dernière »</a>';
                         } else {
                             echo '<span class="page-link" style="opacity:.5">Suivante ›</span>';
                             echo '<span class="page-link" style="opacity:.5">Dernière »</span>';
