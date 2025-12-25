@@ -1,23 +1,12 @@
 <?php
-require_once __DIR__ . '/env_loader.php'; // Ajusté selon votre structure
+require_once __DIR__ . '/env_loader.php';
+require_once __DIR__ . '/meilisearch_client.php';
 loadEnv();
 
-$host = env('DB_HOST', 'localhost');
-$dbname = env('DB_NAME', 'pico');
-$user = env('DB_USER', 'root');
-$pass = env('DB_PASSWORD');
-
-try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    die("Erreur de connexion : " . $e->getMessage());
-}
-
-// Configuration pagination
-$videos_per_page = 12;
-$current_page = max(1, intval($_GET['page'] ?? 1));
-$offset = ($current_page - 1) * $videos_per_page;
+// Configuration Meilisearch
+$meilisearch_host = env('MEILISEARCH_HOST', 'http://localhost:7700');
+$meilisearch_key = env('MEILISEARCH_KEY');
+$meilisearch = new MeilisearchClient($meilisearch_host, $meilisearch_key);
 
 // Récupération des paramètres de recherche
 $query = trim($_GET['q'] ?? '');
@@ -137,6 +126,19 @@ $lang = $_GET['lang'] ?? 'all'; // 'fr', 'en' ou 'all'
     <div class="search-container">
         <form method="get">
             <input type="text" name="q" placeholder="Rechercher un vlog, portfolio ou artiste..." value="<?= htmlspecialchars($query) ?>">
+            <label style="margin-left:8px; font-size:13px; color:white;">Mode:</label>
+            <select name="op" style="padding:8px; border-radius:5px;">
+                <option value="or" <?= (!isset($_GET['op']) || $_GET['op'] === 'or') ? 'selected' : '' ?>>OR</option>
+                <option value="and" <?= (isset($_GET['op']) && $_GET['op'] === 'and') ? 'selected' : '' ?>>AND</option>
+            </select>
+            <label style="margin-left:8px; font-size:13px; color:#333; background:white; padding:4px 8px; border-radius:3px;">Champs:</label>
+            <?php
+                $checked = $_GET['in'] ?? ['title','platform'];
+                $checked = is_array($checked) ? $checked : [$checked];
+            ?>
+            <label style="color:#333; background:white; padding:4px 8px; border-radius:3px; font-size:13px;"><input type="checkbox" name="in[]" value="title" <?= in_array('title', $checked) ? 'checked' : '' ?>> titre</label>
+            <label style="color:#333; background:white; padding:4px 8px; border-radius:3px; font-size:13px;"><input type="checkbox" name="in[]" value="platform" <?= in_array('platform', $checked) ? 'checked' : '' ?>> plateforme</label>
+            <input type="hidden" name="lang" value="<?= htmlspecialchars($lang) ?>">
             <button type="submit">Chercher</button>
         </form>
     </div>
@@ -150,35 +152,63 @@ $lang = $_GET['lang'] ?? 'all'; // 'fr', 'en' ou 'all'
                 <option value="en" <?= $lang === 'en' ? 'selected' : '' ?>>English</option>
             </select>
             <input type="hidden" name="q" value="<?= htmlspecialchars($query) ?>">
+            <?php if (isset($_GET['op'])): ?><input type="hidden" name="op" value="<?= htmlspecialchars($_GET['op']) ?>"><?php endif; ?>
+            <?php if (isset($_GET['in'])): foreach($_GET['in'] as $field): ?><input type="hidden" name="in[]" value="<?= htmlspecialchars($field) ?>"><?php endforeach; endif; ?>
         </div>
     </div>
 
-    <div class="video-grid">
     <?php
     if (!empty($query)) {
-        // Construction de la requête avec filtre langue
-        $where = "(title LIKE :q OR platform LIKE :q)";
-        $params = ['q' => "%$query%"];
-        
-        // Filtre langue basé sur le champ page_url (search_dart = anglais généralement)
+        // Déterminer les champs à rechercher
+        $allowed = ['title','platform'];
+        $selected = $_GET['in'] ?? ['title','platform'];
+        if (!is_array($selected)) { $selected = [$selected]; }
+        $selected_fields = array_values(array_intersect($allowed, $selected));
+        if (empty($selected_fields)) { $selected_fields = ['title','platform']; }
+
+        // Mode OR ou AND
+        $op = $_GET['op'] ?? 'or';
+        $op = ($op === 'and') ? 'and' : 'or';
+
+        // Pagination
+        $perPage = 12;
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        if ($page < 1) { $page = 1; }
+        $offset = ($page - 1) * $perPage;
+
+        // Construire le filtre de langue pour Meilisearch
+        $filter = [];
         if ($lang === 'fr') {
-            $where .= " AND page_url != 'search_dart'"; 
+            $filter[] = "page_url != 'search_dart'";
         } elseif ($lang === 'en') {
-            $where .= " AND page_url = 'search_dart'"; 
+            $filter[] = "page_url = 'search_dart'";
         }
 
-        // Compter le total de résultats pour la pagination
-        $count_stmt = $pdo->prepare("SELECT COUNT(*) as total FROM videos WHERE $where");
-        $count_stmt->execute($params);
-        $total_results = $count_stmt->fetch(PDO::FETCH_ASSOC)['total'];
-        $total_pages = ceil($total_results / $videos_per_page);
+        // Recherche avec Meilisearch
+        $search_result = $meilisearch->multiWordSearch(
+            'videos',
+            $query,
+            $selected_fields,
+            $op,
+            [
+                'limit' => $perPage,
+                'offset' => $offset,
+                'filter' => !empty($filter) ? $filter : null
+            ]
+        );
 
-        // Récupérer les vidéos pour la page actuelle
-        $sql = "SELECT * FROM videos WHERE $where ORDER BY id DESC LIMIT $videos_per_page OFFSET $offset";
-        $stmt = $pdo->prepare($sql);
-        $stmt->execute($params);
-        $results = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $results = $search_result['hits'];
+        $total = $search_result['total'];
 
+        $maxPage = max(1, (int)ceil($total / $perPage));
+        if ($page > $maxPage && $maxPage > 0) { $page = $maxPage; }
+
+        // Afficher le nombre total et la page
+        echo '<div style="margin: 10px 0 20px; color:#fff; text-align: center;">' . htmlspecialchars((string)$total) . ' résultat(s) — Page ' . htmlspecialchars((string)$page) . ' / ' . htmlspecialchars((string)$maxPage) . '</div>';
+    ?>
+
+    <div class="video-grid">
+    <?php
         if ($results) {
             foreach ($results as $video) {
                 // Convertir l'URL YouTube au format embed si nécessaire
@@ -204,39 +234,42 @@ $lang = $_GET['lang'] ?? 'all'; // 'fr', 'en' ou 'all'
         } else {
             echo "<p style='color:white;'>Aucune vidéo d'art trouvée pour ce mot-clé.</p>";
         }
-    } else {
-        echo "<p style='color:white;'>Utilisez la barre de recherche pour trouver des vidéos.</p>";
-    }
     ?>
     </div>
 
-    <?php if (!empty($query) && $total_pages > 1): ?>
-    <div class="pagination">
-        <?php
-        // Lien page précédente
-        if ($current_page > 1) {
-            echo '<a href="?q=' . urlencode($query) . '&lang=' . $lang . '&page=' . ($current_page - 1) . '">← Précédent</a>';
+    <?php
+    } else {
+        echo "<p style='color:white; text-align: center;'>Utilisez la barre de recherche pour trouver des vidéos.</p>";
+    }
+    ?>
+
+    <?php
+    if (!empty($query) && $total > $perPage) {
+        $q = urlencode($query);
+        $langParam = '&lang=' . urlencode($lang);
+        echo '<div class="pagination" style="margin-top:18px; display:flex; gap:8px; align-items:center;">';
+        // First & Prev
+        if ($page > 1) {
+            echo '<a href="?q=' . $q . $langParam . '&page=1" class="page-link">« Première</a>';
+            echo '<a href="?q=' . $q . $langParam . '&page=' . ($page - 1) . '" class="page-link">‹ Précédente</a>';
         } else {
-            echo '<span class="disabled">← Précédent</span>';
+            echo '<span class="page-link" style="opacity:.5">« Première</span>';
+            echo '<span class="page-link" style="opacity:.5">‹ Précédente</span>';
         }
 
-        // Numéros de pages
-        for ($i = 1; $i <= $total_pages; $i++) {
-            if ($i == $current_page) {
-                echo '<span class="current">' . $i . '</span>';
-            } else {
-                echo '<a href="?q=' . urlencode($query) . '&lang=' . $lang . '&page=' . $i . '">' . $i . '</a>';
-            }
-        }
+        // Current indicator
+        echo '<span style="padding:4px 8px;">Page ' . htmlspecialchars((string)$page) . ' / ' . htmlspecialchars((string)$maxPage) . '</span>';
 
-        // Lien page suivante
-        if ($current_page < $total_pages) {
-            echo '<a href="?q=' . urlencode($query) . '&lang=' . $lang . '&page=' . ($current_page + 1) . '">Suivant →</a>';
+        // Next & Last
+        if ($page < $maxPage) {
+            echo '<a href="?q=' . $q . $langParam . '&page=' . ($page + 1) . '" class="page-link">Suivante ›</a>';
+            echo '<a href="?q=' . $q . $langParam . '&page=' . $maxPage . '" class="page-link">Dernière »</a>';
         } else {
-            echo '<span class="disabled">Suivant →</span>';
+            echo '<span class="page-link" style="opacity:.5">Suivante ›</span>';
+            echo '<span class="page-link" style="opacity:.5">Dernière »</span>';
         }
-        ?>
-    </div>
-    <?php endif; ?>
+        echo '</div>';
+    }
+    ?>
 </body>
 </html>

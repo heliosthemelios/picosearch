@@ -1,22 +1,12 @@
 <?php
 require_once __DIR__ . '/env_loader.php';
+require_once __DIR__ . '/meilisearch_client.php';
 loadEnv();
 
-// Configuration de la connexion à la base de données
-$host = env('DB_HOST', 'localhost');
-$dbname = env('DB_NAME', 'pico');
-$user = env('DB_USER', 'root');
-$pass = env('DB_PASSWORD');
-
-// Création d'un objet PDO pour interagir avec MySQL
-// On définit le charset et le mode d'erreur pour faciliter le débogage
-try {
-    $pdo = new PDO("mysql:host=$host;dbname=$dbname;charset=utf8mb4", $user, $pass);
-    $pdo->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
-} catch (PDOException $e) {
-    // En cas d'échec, on affiche un message clair et on stoppe l'exécution
-    die("Connexion échouée : " . $e->getMessage());
-}
+// Configuration Meilisearch
+$meilisearch_host = env('MEILISEARCH_HOST', 'http://localhost:7700');
+$meilisearch_key = env('MEILISEARCH_KEY');
+$meilisearch = new MeilisearchClient($meilisearch_host, $meilisearch_key);
 ?>
 
 <!DOCTYPE html>
@@ -73,68 +63,41 @@ try {
     <?php
     // Si un terme de recherche est fourni, on le traite
     if (!empty($_GET['q'])) {
-        // Séparer la chaîne en mots (tous les espaces comme séparateurs)
-        $search_terms = preg_split('/\s+/', trim($_GET['q']));
-        $params = [];      // paramètres pour la requête préparée
-        $conditions = [];  // conditions SQL individuelles
-
         // Déterminer les champs à rechercher (par défaut title + alt)
         $allowed = ['url','title','alt'];
         $selected = $_GET['in'] ?? ['title','alt'];
         if (!is_array($selected)) { $selected = [$selected]; }
-        // Filtrer les valeurs non autorisées
         $selected_fields = array_values(array_intersect($allowed, $selected));
         if (empty($selected_fields)) { $selected_fields = ['title','alt']; }
 
-        // Construire dynamiquement les conditions selon les champs sélectionnés
-        // On ignore les mots d'1 caractère pour éviter des filtrages trop larges
-        foreach ($search_terms as $i => $term) {
-            $term = trim($term);
-            if (strlen($term) > 1) {
-                $key = ":t" . $i;
-                $fieldParts = [];
-                foreach ($selected_fields as $f) {
-                    if ($f === 'url') {
-                        $fieldParts[] = "(url LIKE " . $key . ")";
-                    } else {
-                        $fieldParts[] = "(COALESCE(" . $f . ", '') LIKE " . $key . ")";
-                    }
-                }
-                $conditions[] = '(' . implode(' OR ', $fieldParts) . ')';
-                $params[$key] = "%" . $term . "%";
-            }
-        }
+        // Mode OR ou AND
+        $op = $_GET['op'] ?? 'or';
+        $op = ($op === 'and') ? 'and' : 'or';
 
-            if (!empty($conditions)) {
-            // Concaténer les conditions selon l'opérateur choisi (par défaut OR pour élargir)
-            $operator = (isset($_GET['op']) && $_GET['op'] === 'and') ? ' AND ' : ' OR ';
-            $where = implode($operator, $conditions);
+        // Pagination
+        $perPage = 100;
+        $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
+        if ($page < 1) { $page = 1; }
+        $offset = ($page - 1) * $perPage;
 
-            // Pagination
-            $perPage = 100;
-            $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
-            if ($page < 1) { $page = 1; }
+        // Recherche avec Meilisearch
+        $search_result = $meilisearch->multiWordSearch(
+            'images',
+            $_GET['q'],
+            $selected_fields,
+            $op,
+            [
+                'limit' => $perPage,
+                'offset' => $offset
+            ]
+        );
 
-            // Compter le total des résultats pour cette recherche
-            $countSql = "SELECT COUNT(*) FROM images WHERE $where";
-            $countStmt = $pdo->prepare($countSql);
-            foreach ($params as $k => $v) { $countStmt->bindValue($k, $v, PDO::PARAM_STR); }
-            $countStmt->execute();
-            $total = (int)$countStmt->fetchColumn();
+        $rows = $search_result['hits'];
+        $total = $search_result['total'];
 
+        if (!empty($rows)) {
             $maxPage = max(1, (int)ceil($total / $perPage));
-            if ($page > $maxPage) { $page = $maxPage; }
-            $offset = ($page - 1) * $perPage;
-
-            // Sélection page courante avec LIMIT/OFFSET et paramètres typés
-            // On récupère aussi `title` et `alt` si ces colonnes existent (si non, COALESCE retournera NULL)
-            $sql = "SELECT id, url, data, title, alt FROM images WHERE $where ORDER BY id DESC LIMIT :limit OFFSET :offset";
-            $stmt = $pdo->prepare($sql);
-            foreach ($params as $k => $v) { $stmt->bindValue($k, $v, PDO::PARAM_STR); }
-            $stmt->bindValue(':limit', $perPage, PDO::PARAM_INT);
-            $stmt->bindValue(':offset', $offset, PDO::PARAM_INT);
-            $stmt->execute();
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            if ($page > $maxPage && $maxPage > 0) { $page = $maxPage; }
 
             // Afficher le nombre total et la page
             echo '<div class="count">' . htmlspecialchars((string)$total) . ' résultat(s) — Page ' . htmlspecialchars((string)$page) . ' / ' . htmlspecialchars((string)$maxPage) . '</div>';
@@ -226,15 +189,16 @@ try {
                     echo '</div>';
                 }
             } else {
-                // Aucun résultat pour les mots fournis
-                echo '<p>Aucun résultat pour ces mots-clés.</p>';
+                echo '<p>Aucune image trouvée.</p>';
             }
         } else {
-            // Cas où la recherche ne contient pas de mots acceptables
-            echo '<p>Veuillez entrer un mot-clé significatif (2 caractères minimum).</p>';
+            echo '<p>Aucune image trouvée.</p>';
         }
     }
     ?>
+
+</body>
+</html>
 
 </body>
 </html>
