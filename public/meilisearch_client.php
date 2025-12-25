@@ -64,10 +64,20 @@ class MeilisearchClient {
         
         $endpoint = "/indexes/$index_name/search";
         
+        // Convertir offset/limit en page/hitsPerPage (offset est déprécié)
+        $hitsPerPage = $options['hitsPerPage'] ?? $options['limit'] ?? 20;
+        $page = 1;
+        if (isset($options['offset']) && $options['offset'] > 0) {
+            $page = (int)ceil(($options['offset'] + 1) / $hitsPerPage);
+        } elseif (isset($options['page'])) {
+            $page = (int)$options['page'];
+            if ($page < 1) $page = 1;
+        }
+        
         $data = [
             'q' => $query_string,
-            'limit' => $options['limit'] ?? 20,
-            'offset' => $options['offset'] ?? 0,
+            'page' => $page,
+            'hitsPerPage' => $hitsPerPage,
             'matchingStrategy' => $mode === 'and' ? 'all' : 'last' // 'all' = AND, 'last' = OR
         ];
         
@@ -78,7 +88,13 @@ class MeilisearchClient {
         
         // Filtres
         if (isset($options['filter'])) {
-            $data['filter'] = $options['filter'];
+            $filters = $options['filter'];
+            // Si c'est un array, combiner avec AND
+            if (is_array($filters) && !empty($filters)) {
+                $data['filter'] = implode(' AND ', $filters);
+            } elseif (is_string($filters) && !empty($filters)) {
+                $data['filter'] = $filters;
+            }
         }
         
         $result = $this->request('POST', $endpoint, $data);
@@ -99,6 +115,8 @@ class MeilisearchClient {
         
         curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
         curl_setopt($ch, CURLOPT_CUSTOMREQUEST, $method);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, false);
+        curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, false);
         
         $headers = [
             'Content-Type: application/json',

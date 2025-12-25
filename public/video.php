@@ -174,7 +174,6 @@ $lang = $_GET['lang'] ?? 'all'; // 'fr', 'en' ou 'all'
         $perPage = 12;
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         if ($page < 1) { $page = 1; }
-        $offset = ($page - 1) * $perPage;
 
         // Construire le filtre de langue pour Meilisearch
         $filter = [];
@@ -191,8 +190,8 @@ $lang = $_GET['lang'] ?? 'all'; // 'fr', 'en' ou 'all'
             $selected_fields,
             $op,
             [
-                'limit' => $perPage,
-                'offset' => $offset,
+                'hitsPerPage' => $perPage,
+                'page' => $page,
                 'filter' => !empty($filter) ? $filter : null
             ]
         );

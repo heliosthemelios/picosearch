@@ -78,7 +78,6 @@ $meilisearch = new MeilisearchClient($meilisearch_host, $meilisearch_key);
         $perPage = 100;
         $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
         if ($page < 1) { $page = 1; }
-        $offset = ($page - 1) * $perPage;
 
         // Recherche avec Meilisearch
         $search_result = $meilisearch->multiWordSearch(
@@ -87,8 +86,8 @@ $meilisearch = new MeilisearchClient($meilisearch_host, $meilisearch_key);
             $selected_fields,
             $op,
             [
-                'limit' => $perPage,
-                'offset' => $offset
+                'hitsPerPage' => $perPage,
+                'page' => $page
             ]
         );
 

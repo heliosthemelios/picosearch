@@ -53,12 +53,11 @@ $meilisearch = new MeilisearchClient($meilisearch_host, $meilisearch_key);
             $perPage = 30;
             $page = isset($_GET['page']) ? (int)$_GET['page'] : 1;
             if ($page < 1) { $page = 1; }
-            $offset = ($page - 1) * $perPage;
 
             // Construire le filtre de langue pour Meilisearch
             $filter = [];
             if (!empty($_GET['lang'])) {
-                $filter[] = "langue = '" . $_GET['lang'] . "'";
+                $filter[] = "langue = " . $_GET['lang'];
             }
 
             // Recherche avec Meilisearch (mode AND par défaut pour les sites)
@@ -68,8 +67,8 @@ $meilisearch = new MeilisearchClient($meilisearch_host, $meilisearch_key);
                 ['title', 'url', 'snippet'],
                 'and',
                 [
-                    'limit' => $perPage,
-                    'offset' => $offset,
+                    'hitsPerPage' => $perPage,
+                    'page' => $page,
                     'filter' => !empty($filter) ? $filter : null
                 ]
             );
