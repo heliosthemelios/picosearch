@@ -21,7 +21,15 @@ try {
 
 <!DOCTYPE html>
 <html lang="fr">
-<head>
+<head><!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4YGWP0F30D"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-4YGWP0F30D');
+    </script>
+
     <meta charset="UTF-8">
     <title>Recherche d'images - PicoSearch</title>
     <link rel="stylesheet" href="style.css">
@@ -36,8 +44,13 @@ try {
     </style>
 </head>
 <body>
-    <h1>Recherche d'images - PicoSearch</h1>
 
+    <h1>Recherche d'images - PicoSearch</h1>
+     <div class="top-bar">
+        <a class="link" href="index.php" title="Recherche de site">Sites</a>
+        <a class="link" href="images.php" title="Recherche d'images">images</a>
+        <a class="link" href="video.php" title="Recherche de vidéos">vidéos</a>
+    </div>
     <!-- Formulaire simple de recherche (GET) -->
     <form method="get">
         <input type="text" name="q" placeholder="Rechercher des images..." value="<?= htmlspecialchars($_GET['q'] ?? '') ?>">

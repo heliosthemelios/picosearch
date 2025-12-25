@@ -17,6 +17,14 @@ try {
 <!DOCTYPE html>
 <html lang="fr">
 <head>
+    <!-- Google tag (gtag.js) -->
+    <script async src="https://www.googletagmanager.com/gtag/js?id=G-4YGWP0F30D"></script>
+    <script>
+        window.dataLayer = window.dataLayer || [];
+        function gtag(){dataLayer.push(arguments);}
+            gtag('js', new Date());
+            gtag('config', 'G-4YGWP0F30D');
+    </script>
     <meta charset="UTF-8">
     <title>Moteur PicoSearch</title>
     <link rel="stylesheet" href="style.css">
@@ -30,7 +38,7 @@ try {
         <div class="top-bar">
         <a class="link" href="index.php" title="Recherche de site">Sites</a>
         <a class="link" href="images.php" title="Recherche d'images">images</a>
-        <a class="link" href="#" title="Recherche de vidéos">vidéos</a>
+        <a class="link" href="video.php" title="Recherche de vidéos">vidéos</a>
         </div>
         <div class="search-container">
             <form method="get">
